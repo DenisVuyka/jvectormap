@@ -40,7 +40,7 @@ module.exports = function (grunt) {
 			},
 			dist: {
 				src: jsFiles,
-				dest: 'dist/jquery.jvectormap.js'
+				dest: 'dist/jvm.js'
 			}
 		},
 		uglify: {
@@ -55,7 +55,7 @@ module.exports = function (grunt) {
 			},
 			dist: {
 				files: {
-					'dist/jquery.jvectormap.min.js': ['dist/jquery.jvectormap.js']
+					'dist/jvm.min.js': ['dist/jvm.js']
 				}
 			}
 		},
@@ -70,7 +70,7 @@ module.exports = function (grunt) {
 			},
 			css: {
         src: 'jquery-jvectormap.css',
-        dest: 'dist/jquery.jvectormap.min.css'
+        dest: 'dist/jvm.min.css'
       }
 		}
 	});
