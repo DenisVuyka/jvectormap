@@ -1529,6 +1529,7 @@ jvm.WorldMap = function(params) {
   this.regions = {};
   this.regionsColors = {};
   this.regionsData = {};
+  this.overlays = {};
 
   this.container = jvm.$('<div>').css({width: '100%', height: '100%'}).addClass('jvectormap-container');
   this.params.container.append( this.container );
@@ -1692,6 +1693,10 @@ jvm.WorldMap.prototype = {
 
     if (this.markers) {
       this.repositionMarkers();
+    }
+
+    if (this.overlays) {
+      this.updateOverlays();
     }
 
     this.container.trigger('viewportChange', [this.scale/this.baseScale, this.transX, this.transY]);
@@ -2173,6 +2178,16 @@ jvm.WorldMap.prototype = {
       point = this.getMarkerPosition( this.markers[i].config );
       if (point !== false) {
         this.markers[i].element.setStyle({cx: point.x, cy: point.y});
+      }
+    }
+  },
+
+  updateOverlays: function() {
+    var i, overlay;
+    for (i in this.overlays) {
+      overlay = this.overlays[i];
+      if (overlay.updateLayout instanceof Function) {
+        overlay.updateLayout.call(overlay, this);
       }
     }
   },

@@ -33,6 +33,13 @@ module.exports = function (grunt) {
 
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
+    copy: {
+      dist: {
+        files: [
+          { src: ['jvm.utils.js'], dest: 'dist/'}
+        ]
+      }
+    },
 		concat: {
 			options: {
 				// stripBanners: true,
@@ -55,7 +62,8 @@ module.exports = function (grunt) {
 			},
 			dist: {
 				files: {
-					'dist/jvm.min.js': ['dist/jvm.js']
+					'dist/jvm.min.js': ['dist/jvm.js'],
+          'dist/jvm.utils.min.js': ['jvm.utils.js']
 				}
 			}
 		},
@@ -79,7 +87,8 @@ module.exports = function (grunt) {
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-cssmin');
+  grunt.loadNpmTasks('grunt-contrib-copy');
 
 	// Default task(s).
-  grunt.registerTask('default', ['concat', 'uglify', 'cssmin']);
+  grunt.registerTask('default', ['copy', 'concat', 'uglify', 'cssmin']);
 };
