@@ -27,6 +27,29 @@ jvm.utils.defs = function (map) {
     return defs;
 };
 
+jvm.utils.polarToCartesian = function (centerX, centerY, radius, angleInDegrees) {
+    var angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+
+    return {
+        x: centerX + (radius * Math.cos(angleInRadians)),
+        y: centerY + (radius * Math.sin(angleInRadians))
+    };
+};
+
+jvm.utils.describeArc = function (x, y, radius, startAngle, endAngle) {
+    var start = jvm.utils.polarToCartesian(x, y, radius, endAngle);
+    var end = jvm.utils.polarToCartesian(x, y, radius, startAngle);
+
+    var arcSweep = endAngle - startAngle <= 180 ? "0" : "1";
+
+    var d = [
+        "M", start.x, start.y,
+        "A", radius, radius, 0, arcSweep, 0, end.x, end.y
+    ].join(" ");
+
+    return d;
+};
+
 /*
 Sample:
     jvm.utils.addArrowheadMarker(map, {
@@ -215,6 +238,79 @@ jvm.utils.Arrow = function (map, settings) {
     this.updateLayout(map);
 };
 
+jvm.utils.CircularArrow = function (map, settings) {
+    if (!settings) throw new Error('Arrow settings not found.');
+    
+    jvm.utils.addArrowheadMarker(map, { id: 'arrow-black', fill: 'black' });
+    jvm.utils.addArrowheadMarker(map, { id: 'arrow-red', fill: 'red', stroke: 'red' });
+    jvm.utils.addArrowheadMarker(map, { id: 'arrow-green', fill: 'green', stroke: 'green' });
+    jvm.utils.addArrowheadMarker(map, { id: 'arrow-blue', fill: 'blue', stroke: 'blue' });
+
+    this.id = settings.id || jvm.utils.makeid();
+    this.location = settings.location;
+    
+    if (typeof settings.location == 'string') {
+        this.location = jvm.utils.countries[settings.location.toUpperCase()].latlng;
+    }
+    
+    this.r = settings.r || 20;
+    
+    var supportedColors = ['black', 'red', 'green', 'blue'];
+    var color = (settings.color || 'red').toLowerCase();
+    var arrowheadId = 'arrow-black';
+
+    if (supportedColors.indexOf(color) >= 0) {
+        arrowheadId = 'arrow-' + color;
+    }
+
+    var path1 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path1.setAttribute('stroke', settings.stroke || 'darkred');
+    path1.setAttribute('stroke-width', settings['stroke-width'] || 4);
+    path1.setAttribute('fill', settings.fill || 'none');
+    path1.setAttribute('marker-start', 'url(#' + arrowheadId + ')');
+    path1.setAttribute('marker-mid', 'url(#' + arrowheadId + ')');
+    map.canvas.node.appendChild(path1);
+    this.path1 = path1;
+
+    var path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path2.setAttribute('stroke', settings.stroke || 'darkred');
+    path2.setAttribute('stroke-width', settings['stroke-width'] || 4);
+    path2.setAttribute('fill', settings.fill || 'none');
+    path2.setAttribute('marker-start', 'url(#' + arrowheadId +')');
+    path2.setAttribute('marker-mid', 'url(#' + arrowheadId + ')');
+    map.canvas.node.appendChild(path2);
+    this.path2 = path2;
+    
+    if (settings.text) {
+        var text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('cursor', 'default');
+        text.setAttribute('font-weight', 'bold');
+        var content = document.createTextNode(settings.text);
+        text.appendChild(content);
+        map.canvas.node.appendChild(text);
+        
+        var rect = text.getBBox();
+        this.text = text;
+        this.rect = rect;
+    }
+
+    this.updateLayout = function (m) {
+        var l = m.latLngToPoint(this.location[0], this.location[1]);
+        var d1 = jvm.utils.describeArc(l.x, l.y, this.r, 45, 225);
+        var d2 = jvm.utils.describeArc(l.x, l.y, this.r, 225, 45);
+
+        this.path1.setAttribute('d', d1);
+        this.path2.setAttribute('d', d2);
+        
+        if (this.text) {
+            this.text.setAttribute('x', l.x - (this.rect.width / 2));
+            this.text.setAttribute('y', l.y - this.r - (this.rect.height / 2));
+        }
+    };
+
+    this.updateLayout(map);
+};
+
 /*
 *   Examples:
 *     jvm.utils.createLabel(map, { location: [-4.61, 55.45], text: 'Seychelles' });
@@ -232,9 +328,22 @@ jvm.utils.createLabel = function (map, settings) {
 *     jvm.utils.createArrow(map, { from: [1.3, 103.8], to: [7.35, 134.46], color: 'red' });
 *     jvm.utils.createArrow(map, { from: 'SG', to: 'PW', color: 'blue' });
 *     jvm.utils.createArrow(map, { from: 'SG', to: 'PW', color: 'blue', text: '20%' });
+*   Self-pointing (circular) arrows:
+*     jvm.utils.createArrow(map, { location: [100, 100] });
+*     jvm.utils.createArrow(map, { location: 'ru', text: 'Russia, 45%' });
+*     jvm.utils.createArrow(map, { location: 'UA', text: 'Ukraine, 20%', color: 'blue', stroke: 'blue' });
 */
 jvm.utils.createArrow = function (map, settings) {
-    var arrow = new jvm.utils.Arrow(map, settings);
+    if (!map) throw new Error('map not defined.');
+    if (!settings) throw new Error('settings not defined.');
+
+    var arrow;
+    
+    if (settings.location)
+        arrow = new jvm.utils.CircularArrow(map, settings);
+    else
+        arrow = new jvm.utils.Arrow(map, settings);
+    
     map.overlays[arrow.id] = arrow;
     return arrow;
 };
